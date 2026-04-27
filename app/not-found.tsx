@@ -1,46 +1,24 @@
-// app/not-found.tsx
+"use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-import Link from "next/link";
+const NotFound = () => {
+  const router = useRouter();
 
-export default function NotFound() {
+  useEffect(() => {
+    const timer = setTimeout(() => router.push("/"), 3000);
+    return () => clearTimeout(timer);
+  }, [router]);
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '60vh',
-      textAlign: 'center',
-      padding: '2rem',
-      fontFamily: 'var(--font-geist-sans)'
-    }}>
-      <h1 style={{
-        fontSize: '2.5rem',
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: '1rem'
-      }}>
-        404 - Page not found
-      </h1>
-      <p style={{
-        fontSize: '1.2rem',
-        color: '#666',
-        marginBottom: '2rem'
-      }}>
-        Sorry, the page you are looking for does not exist.
-      </p>
-      <Link href="/" style={{
-        color: '#0070f3',
-        textDecoration: 'none',
-        fontWeight: '500',
-        padding: '0.5rem 1rem',
-        border: '2px solid #0070f3',
-        borderRadius: '4px',
-        transition: 'all 0.2s'
-      }}>
-        Go back home
-      </Link>
+    <div>
+      <div>
+        <h1>404 - Page not found</h1>
+        <p>You will be redirected to the homepage in a few seconds…</p>
+      </div>
     </div>
   );
-}
+};
+
+export default NotFound;

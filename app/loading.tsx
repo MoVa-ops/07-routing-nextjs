@@ -1,8 +1,6 @@
-// app/loading.tsx
-
-
+import css from "./loading.module.css";
 const Loading = () => {
-  return <p>Loading, please wait...</p>;
+  return <p className={css.text}>Loading, please wait...</p>;
 };
 
 export default Loading;

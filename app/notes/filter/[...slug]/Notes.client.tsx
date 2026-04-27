@@ -1,122 +1,119 @@
-// app/notes/filter/[...slug]/Notes.client.tsx
-
-
 "use client";
 
-import { useState, useEffect } from "react";
-import { useDebounce } from "use-debounce";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { Toaster } from "react-hot-toast";
-import { fetchNotes } from "@/lib/api";
-import NoteList from "@/components/NoteList/NoteList";
+import { useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+  useMutation,
+  UseQueryResult,
+  keepPreviousData,
+} from "@tanstack/react-query";
+import { fetchNotes, createNote, NotesHttpResponse } from "@/lib/api";
+import type { FormValues, Note } from "@/types/note";
+import { useDebounce } from "@/hooks/useDebouncedValue";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
+import NoteList from "@/components/NoteList/NoteList";
 import Modal from "@/components/Modal/Modal";
 import NoteForm from "@/components/NoteForm/NoteForm";
-import styles from "./page.module.css";
+import Loader from "@/components/Loader/Loader";
+import { ErrorMessageEmpty } from "@/components/ErrorMessageEmpty/ErrorMessageEmpty";
+import ToastContainer from "@/components/ToastContainer/ToastContainer";
+import toast from "react-hot-toast";
+import css from "./NotesPage.module.css";
 
 interface NotesClientProps {
-  initialPage: number;
-  initialSearchQuery: string;
-  tagFilter?: string;
+  initialNotes: Note[];
+  initialTotalPages: number;
+  tag: string;
 }
 
 export default function NotesClient({
-  initialPage,
-  initialSearchQuery,
-  tagFilter,
+  initialNotes,
+  initialTotalPages,
+  tag,
 }: NotesClientProps) {
-  const [page, setPage] = useState(initialPage);
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 500);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
+  const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data, isLoading, isError, isSuccess, error } = useQuery({
-    queryKey: ["notes", page, debouncedSearchQuery, tagFilter],
-    queryFn: () => fetchNotes(page, 12, debouncedSearchQuery, tagFilter),
-    retry: 2,
+  const queryClient = useQueryClient();
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+  }: UseQueryResult<NotesHttpResponse, Error> = useQuery<NotesHttpResponse>({
+    queryKey: ["notes", debouncedSearch, page, tag],
+    queryFn: () => fetchNotes(debouncedSearch, page, tag),
+    initialData: {
+      notes: initialNotes,
+      totalPages: initialTotalPages,
+    },
     placeholderData: keepPreviousData,
   });
 
-  useEffect(() => {
-    if (isSuccess && data?.notes) {
-      console.log("Data received:", data);
-      if (data.notes.length === 0) {
-        console.log("No notes found in response");
-      }
-    }
-    if (isError) {
-      console.error("Error fetching notes:", error);
-    }
-  }, [isSuccess, isError, data, error]);
+  const createNoteMutation = useMutation({
+    mutationFn: (noteData: FormValues) => createNote(noteData),
+    onSuccess: () => {
+      toast.success("Note created successfully");
+      setPage(1);
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      setIsModalOpen(false);
+    },
+    onError: () => toast.error("Error creating note"),
+  });
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery]);
+  const notes = data?.notes || [];
+  const pageCount = data?.totalPages ?? 1;
 
-  const handleOpenModal = () => {
-    console.log("Opening modal");
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    console.log("Closing modal");
-    setIsModalOpen(false);
-  };
-
-  if (isLoading) {
-    return <div className={styles.loading}>Loading...</div>;
-  }
-
-  if (isError) {
-    return (
-      <div className={styles.error}>
-        Error loading notes
-        {error && <p>{(error as Error).message}</p>}
-      </div>
-    );
-  }
-
-  const hasNotes = isSuccess && data?.notes?.length > 0;
+  if (isError && error) throw error;
 
   return (
-    <div className={styles.app}>
-      <Toaster position="top-center" />
-      <header className={styles.toolbar}>
-        <SearchBox
-          onSearch={(query) => {
-            setSearchQuery(query);
-          }}
-          initialQuery={initialSearchQuery}
-        />
+    <div className={css.app}>
+      <ToastContainer />
 
-        {hasNotes && data?.totalPages && data.totalPages > 1 && (
+      <header className={css.toolbar}>
+        <SearchBox
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+        />
+        {pageCount > 1 && (
           <Pagination
-            pageCount={data.totalPages}
+            totalPages={pageCount}
             currentPage={page}
-            onPageChange={(selectedPage) => setPage(selectedPage)}
+            onPageChange={({ selected }) => setPage(selected + 1)}
           />
         )}
-        <button
-          className={styles.button}
-          onClick={handleOpenModal}
-          data-testid="create-note-button"
-        >
+        <button className={css.button} onClick={() => setIsModalOpen(true)}>
           Create note +
         </button>
       </header>
 
-      <main>
-        {hasNotes ? (
-          <NoteList notes={data?.notes || []} />
-        ) : (
-          <div className={styles.empty}>No notes found</div>
-        )}
-      </main>
+      {isLoading && <Loader />}
+
+      {!isLoading && !isError && (
+        <>
+          {notes.length > 0 ? (
+            <NoteList notes={notes} />
+          ) : (
+            <ErrorMessageEmpty />
+          )}
+        </>
+      )}
 
       {isModalOpen && (
-        <Modal>
-          <NoteForm onCancel={handleCloseModal} />
+        <Modal onClose={() => setIsModalOpen(false)}>
+          {createNoteMutation.isPending ? (
+            <Loader />
+          ) : (
+            <NoteForm onClose={() => setIsModalOpen(false)} />
+          )}
         </Modal>
       )}
     </div>

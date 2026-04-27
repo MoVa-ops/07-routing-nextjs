@@ -1,17 +1,15 @@
-// app/notes/filter/layout.tsx
+import css from "./LayoutNotes.module.css";
 
-import styles from "@/app/notes/filter/layout.module.css";
-
-interface LayoutProps {
+type Props = {
   children: React.ReactNode;
   sidebar: React.ReactNode;
-}
+};
 
-export default function Layout({ children, sidebar }: LayoutProps) {
+export default function FilterLayout({ children, sidebar }: Props) {
   return (
-    <div className={styles.container}>
-      <aside className={styles.sidebar}>{sidebar}</aside>
-      <main className={styles.main}>{children}</main>
-    </div>
+    <section className={css.container}>
+      <aside className={css.sidebar}>{sidebar}</aside>
+      <main className={css.notesWrapper}>{children}</main>
+    </section>
   );
 }

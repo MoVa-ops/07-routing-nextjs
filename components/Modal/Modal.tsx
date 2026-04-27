@@ -1,55 +1,38 @@
-// components/Modal/Modal.tsx
-
-"use client";
-
-import { useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import styles from "@/components/Modal/Modal.module.css";
+import React, { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
+import css from "../Modal/Modal.module.css";
 
 interface ModalProps {
+  onClose: () => void;
   children: React.ReactNode;
-  onClose?: () => void;
 }
 
-export default function Modal({ children, onClose }: ModalProps) {
-  const router = useRouter();
-
-  const handleClose = useCallback(() => {
-    if (onClose) {
-      onClose();
-    } else {
-      router.back();
-    }
-  }, [router, onClose]);
+export default function Modal({ onClose, children }: ModalProps) {
+  const [modalRoot, setModalRoot] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleClose();
-      }
+    setModalRoot(document.getElementById("modal-root") ?? document.body);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Escape") onClose();
     };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
-    document.addEventListener("keydown", handleEscape);
-    document.body.style.overflow = "hidden";
+  if (!modalRoot) return null;
 
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "unset";
-    };
-  }, [handleClose]);
-
-  return (
-    <div className={styles.overlay} onClick={handleClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <button
-          className={styles.closeButton}
-          onClick={handleClose}
-          aria-label="Close modal"
-        >
-          ×
-        </button>
+  return ReactDOM.createPortal(
+    <div
+      className={css.backdrop}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className={css.modal} onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
-    </div>
+    </div>,
+    modalRoot
   );
 }

@@ -1,127 +1,67 @@
-// lib/api.ts
-
-
 import axios from "axios";
-import { Note, NewNote } from "../types/note";
+import { FormValues, Note } from "../types/note";
 
-export interface NotesResponse {
+export interface NotesHttpResponse {
   notes: Note[];
   totalPages: number;
 }
 
 const BASE_URL = "https://notehub-public.goit.study/api";
+const TOKEN = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN!;
 
-// Захисник від подвійних запитів (тільки для клієнтських запитів)
-let lastRequestTime = 0;
-const REQUEST_DELAY = 500; // мс
-
-// Допоміжна функція для перевірки, чи виконується на клієнті
-const isClient = () => typeof window !== "undefined";
-
-const shouldCheckRateLimit = () => {
-  return isClient();
+const headers = {
+  Authorization: `Bearer ${TOKEN}`,
 };
 
 export const fetchNotes = async (
-  page = 1,
-  perPage = 12,
-  search = "",
+  search: string,
+  page: number,
   tag?: string
-): Promise<NotesResponse> => {
-  // Перевіряємо rate limit тільки на клієнті
-  if (shouldCheckRateLimit()) {
-    const now = Date.now();
-    if (now - lastRequestTime < REQUEST_DELAY) {
-      console.log("Запит відхилено: занадто швидко після попереднього");
-      throw new Error("Request too fast");
-    }
-    lastRequestTime = now;
+): Promise<NotesHttpResponse> => {
+  const params: Record<string, string | number> = {
+    page,
+  };
+
+  if (search) {
+    params.search = search;
   }
 
-  try {
-    // Використовуємо Record замість any
-    const params: Record<string, string | number> = {
-      page,
-      perPage,
-      search
-    };
-    
-    // Додаємо tag тільки якщо він переданий і не дорівнює "All"
-    if (tag && tag !== "All") {
-      params.tag = tag;
-    }
-    
-    const response = await axios.get<NotesResponse>(`${BASE_URL}/notes`, {
-      params,
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_NOTEHUB_TOKEN}`,
-      },
-    });
-
-    return response.data;
-  } catch (error) {
-    console.error("Помилка запиту:", error);
-    throw error;
+  if (tag && tag !== "All") {
+    params.tag = tag;
   }
+
+  const { data } = await axios.get<NotesHttpResponse>(`${BASE_URL}/notes`, {
+    headers: {
+      Authorization: `Bearer ${TOKEN}`,
+    },
+    params,
+  });
+
+  return data;
 };
 
 export const fetchNoteById = async (id: string): Promise<Note> => {
-  // Перевіряємо rate limit тільки на клієнті
-  if (shouldCheckRateLimit()) {
-    const now = Date.now();
-    if (now - lastRequestTime < REQUEST_DELAY) {
-      console.log("Запит відхилено: занадто швидко після попереднього");
-      throw new Error("Request too fast");
-    }
-    lastRequestTime = now;
-  }
+  const response = await axios.get<Note>(`${BASE_URL}/notes/${id}`, {
+    headers,
+  });
 
-  try {
-    const response = await axios.get<Note>(`${BASE_URL}/notes/${id}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_NOTEHUB_TOKEN}`,
-      },
-    });
-    return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 404) {
-        throw new Error(`Note with ID "${id}" not found`);
-      }
-      if (error.response?.status === 401) {
-        throw new Error("Authorization error. Please check access token");
-      }
-    }
-
-    console.error("Error fetching note:", error);
-    throw new Error("Failed to fetch note");
-  }
+  return response.data;
 };
 
-export const createNote = async (note: NewNote): Promise<Note> => {
-  try {
-    const response = await axios.post<Note>(`${BASE_URL}/notes`, note, {
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_NOTEHUB_TOKEN}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Помилка створення:", error);
-    throw error;
-  }
+export const createNote = async (note: FormValues): Promise<Note> => {
+  const response = await axios.post<Note>(`${BASE_URL}/notes`, note, {
+    headers: {
+      ...headers,
+      "Content-Type": "application/json",
+    },
+  });
+
+  return response.data;
 };
 
 export const deleteNote = async (id: string): Promise<Note> => {
-  try {
-    const response = await axios.delete<Note>(`${BASE_URL}/notes/${id}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_NOTEHUB_TOKEN}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Помилка видалення:", error);
-    throw error;
-  }
+  const response = await axios.delete<Note>(`${BASE_URL}/notes/${id}`, {
+    headers,
+  });
+  return response.data;
 };
