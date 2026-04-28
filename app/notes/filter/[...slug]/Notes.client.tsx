@@ -45,7 +45,7 @@ export default function NotesClient({
     isLoading,
     isError,
     error,
-  }: UseQueryResult<NotesHttpResponse, Error> = useQuery<NotesHttpResponse>({
+  }: UseQueryResult<NotesHttpResponse, Error> = useQuery({
     queryKey: ["notes", debouncedSearch, page, tag],
     queryFn: () => fetchNotes(debouncedSearch, page, tag),
     initialData: {
@@ -83,13 +83,15 @@ export default function NotesClient({
             setPage(1);
           }}
         />
+
         {pageCount > 1 && (
           <Pagination
-            totalPages={pageCount}
+            pageCount={pageCount}
             currentPage={page}
-            onPageChange={({ selected }) => setPage(selected + 1)}
+            onPageChange={(selectedPage) => setPage(selectedPage)}
           />
         )}
+
         <button className={css.button} onClick={() => setIsModalOpen(true)}>
           Create note +
         </button>
