@@ -1,5 +1,5 @@
-import ReactPaginate from 'react-paginate';
-import styles from './Pagination.module.css';
+import ReactPaginate from "react-paginate";
+import styles from "./Pagination.module.css";
 
 interface PaginationProps {
   pageCount: number;
@@ -14,7 +14,8 @@ export default function Pagination({
 }: PaginationProps) {
   const handlePageChange = ({ selected }: { selected: number }) => {
     const newPage = selected + 1;
-    if (newPage !== currentPage) { // Додано перевірку
+
+    if (newPage !== currentPage) {
       onPageChange(newPage);
     }
   };
@@ -24,7 +25,7 @@ export default function Pagination({
       pageCount={pageCount}
       pageRangeDisplayed={5}
       marginPagesDisplayed={1}
-      onPageChange={handlePageChange} // Використовуємо обробник
+      onPageChange={handlePageChange}
       forcePage={currentPage - 1}
       containerClassName={styles.pagination}
       activeClassName={styles.active}
