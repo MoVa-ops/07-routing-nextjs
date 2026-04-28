@@ -9,7 +9,7 @@ import {
   keepPreviousData,
 } from "@tanstack/react-query";
 import { fetchNotes, createNote, NotesHttpResponse } from "@/lib/api";
-import type { FormValues, Note } from "@/types/note";
+import type { FormValues } from "@/types/note";
 import { useDebounce } from "@/hooks/useDebouncedValue";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
@@ -23,16 +23,10 @@ import toast from "react-hot-toast";
 import css from "./NotesPage.module.css";
 
 interface NotesClientProps {
-  initialNotes: Note[];
-  initialTotalPages: number;
   tag: string;
 }
 
-export default function NotesClient({
-  initialNotes,
-  initialTotalPages,
-  tag,
-}: NotesClientProps) {
+export default function NotesClient({ tag }: NotesClientProps) {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 500);
   const [page, setPage] = useState(1);
@@ -48,10 +42,6 @@ export default function NotesClient({
   }: UseQueryResult<NotesHttpResponse, Error> = useQuery({
     queryKey: ["notes", debouncedSearch, page, tag],
     queryFn: () => fetchNotes(debouncedSearch, page, tag),
-    initialData: {
-      notes: initialNotes,
-      totalPages: initialTotalPages,
-    },
     placeholderData: keepPreviousData,
   });
 

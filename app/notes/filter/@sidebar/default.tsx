@@ -10,16 +10,22 @@ interface SidebarNotesProps {
 export default function SidebarNotes({ currentTag }: SidebarNotesProps) {
   return (
     <ul className={css.menuList}>
-      {tags.map((tag) => (
-        <li key={tag} className={css.menuItem}>
-          <Link
-            href={`/notes/filter/${tag}`}
-            className={`${css.menuLink} ${currentTag === tag ? css.active : ""}`}
-          >
-            {tag}
-          </Link>
-        </li>
-      ))}
+      {tags.map((tag) => {
+        const hrefTag = tag === "All" ? "all" : tag;
+
+        return (
+          <li key={tag} className={css.menuItem}>
+            <Link
+              href={`/notes/filter/${hrefTag}`}
+              className={`${css.menuLink} ${
+                currentTag === hrefTag || currentTag === tag ? css.active : ""
+              }`}
+            >
+              {tag}
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }

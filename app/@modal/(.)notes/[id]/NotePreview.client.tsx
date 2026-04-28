@@ -2,14 +2,17 @@
 
 import css from "./NotePreview.module.css";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { fetchNoteById } from "@/lib/api";
 import Loader from "@/components/Loader/Loader";
 import ErrorMessage from "@/components/ErrorMessage/ErrorMessage";
 import Modal from "@/components/Modal/Modal";
 
-export default function NotePreviewClient() {
-  const { id } = useParams<{ id: string }>();
+interface NotePreviewProps {
+  id: string;
+}
+
+export default function NotePreviewClient({ id }: NotePreviewProps) {
   const router = useRouter();
 
   const {
@@ -22,13 +25,25 @@ export default function NotePreviewClient() {
     refetchOnMount: false,
   });
 
-  if (isLoading) return <Loader />;
-
-  if (error || !note) return <ErrorMessage />;
-
   const handleClose = () => {
     router.back();
   };
+
+  if (isLoading) {
+    return (
+      <Modal onClose={handleClose}>
+        <Loader />
+      </Modal>
+    );
+  }
+
+  if (error || !note) {
+    return (
+      <Modal onClose={handleClose}>
+        <ErrorMessage />
+      </Modal>
+    );
+  }
 
   return (
     <Modal onClose={handleClose}>
@@ -37,6 +52,7 @@ export default function NotePreviewClient() {
           <button className={css.backBtn} onClick={handleClose}>
             Back
           </button>
+
           <div className={css.header}>
             <h2>{note.title}</h2>
           </div>
